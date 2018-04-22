@@ -4,34 +4,34 @@ import os
 import sys
 import numpy as np
 import load_word2vec
+from config import *
 from tqdm import tqdm
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
-model_dir = "/home/shikher/workspace/nlp_project/textual_entailment/models" 
-root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
-vectors_file = "GoogleNews-vectors-negative300.bin"
-glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
+# model_dir = "/home/shikher/workspace/nlp_project/textual_entailment/models" 
+# root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
+# vectors_file = "GoogleNews-vectors-negative300.bin"
+# glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
 
-snli_dev_file = "snli_1.0/snli_1.0_dev.txt"
-snli_train_file = "snli_1.0/snli_1.0_train.txt"
+# snli_dev_file = "snli_1.0/snli_1.0_dev.txt"
+# snli_train_file = "snli_1.0/snli_1.0_train.txt"
 
 #Load the vocabulary
 google_vocab = load_word2vec.WordEmbedding( path = glove_file )
 google_vocab.load( vector_type = "glove" )
 
-max_hypothesis_length, max_evidence_length = 25, 25
-batch_size = 32
-vector_size = 100
+# batch_size = 32
+# vector_size = 100
+# max_hypothesis_length, max_evidence_length = 25, 25
 
-hidden_size = 64
-lstm_size = hidden_size
-weight_decay = 0.0001
-learning_rate = 1
-input_p, output_p = 0.7, 0.7
-training_iterations_count = 500000
-check_accuracy_step = 10
+# hidden_size = 64
+# learning_rate = 1
+# weight_decay = 0.0001
+# lstm_size = hidden_size
+# check_accuracy_step = 100
+# input_p, output_p = 0.7, 0.7
+# training_iterations_count = 500000
 
 def score_setup(row):
     convert_dict = {
@@ -52,7 +52,6 @@ def fit_to_size(matrix, shape):
     slices = [slice(0,min(dim,shape[e])) for e, dim in enumerate(matrix.shape)]
     res[slices] = matrix[slices]
     return res
-
 
 def split_data_into_scores():
     import csv
@@ -79,7 +78,6 @@ def split_data_into_scores():
     
 
 data_feature_list, correct_values, correct_scores = split_data_into_scores()
-
 
 l_h, l_e = max_hypothesis_length, max_evidence_length
 N, D, H = batch_size, vector_size, hidden_size
@@ -135,6 +133,7 @@ fc_bias = tf.get_variable('bias', [3])
 #   for the fully connected layer.
 tf.add_to_collection( tf.GraphKeys.REGULARIZATION_LOSSES, tf.nn.l2_loss(fc_weight) ) 
 
+# x: the inputs to the bidirectional_rnn
 x = tf.concat([hyp, evi], 1) # N, (Lh+Le), d
 # Permuting batch_size and n_steps
 x = tf.transpose(x, [1, 0, 2]) # (Le+Lh), N, d
@@ -143,9 +142,6 @@ x = tf.reshape(x, [-1, vector_size]) # (Le+Lh)*N, d
 # Split to get a list of 'n_steps' tensors of shape (batch_size, n_input)
 x = tf.split(x, l_seq,)
 
-# x: the inputs to the bidirectional_rnn
-
-
 # tf.contrib.rnn.static_bidirectional_rnn: Runs the input through
 #   two recurrent networks, one that runs the inputs forward and one
 #   that runs the inputs in reversed order, combining the outputs.
@@ -153,13 +149,13 @@ rnn_outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm, lstm_back, x, 
 
 # rnn_outputs: the list of LSTM outputs, as a list. 
 # What we want is the latest output, rnn_outputs[-1]
-classification_scores = tf.matmul(rnn_outputs[-1], fc_weight) + fc_bias
+
 # The scores are relative certainties for how likely the output matches
 #   a certain entailment: 
 #     0: Positive entailment
 #     1: Neutral entailment
 #     2: Negative entailment
-
+classification_scores = tf.matmul(rnn_outputs[-1], fc_weight) + fc_bias
  
 # Since we have both classification scores and optimal scores, the choice here is using a variation on softmax loss from Tensorflow:
 # tf.nn.softmax_cross_entropy_with_logits.
@@ -178,7 +174,6 @@ with tf.variable_scope("loss"):
 # optimizer = tf.train.AdamOptimizer(learning_rate)
 optimizer = tf.train.GradientDescentOptimizer(learning_rate)
 opt_op = optimizer.minimize(total_loss)
-
 
 # Train the model
 # Initialize variables
@@ -218,7 +213,6 @@ for i in training_iterations:
 # Save the learned weights and bias
 save_path = saver.save(sess, os.path.join( model_dir, "model.ckpt"))
 sess.close()
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 print "Maximum is : " + str(max(accuracies))        

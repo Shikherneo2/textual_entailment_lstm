@@ -3,26 +3,28 @@
 import os
 import random
 import numpy as np
+from config import *
 import load_word2vec
 from tqdm import tqdm
 import tensorflow as tf
 
-root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
-vectors_file = "GoogleNews-vectors-negative300.bin"
-glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
+# model_dir = "/home/shikher/workspace/nlp_project/textual_entailment/models" 
+# root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
+# vectors_file = "GoogleNews-vectors-negative300.bin"
+# glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
 
-snli_test_file = "snli_1.0/snli_1.0_test.txt"
+# snli_test_file = "snli_1.0/snli_1.0_test.txt"
 
 #Load the vocabulary
 google_vocab = load_word2vec.WordEmbedding( path = glove_file )
 google_vocab.load( vector_type = "glove" )
 
-batch_size = 32
-hidden_size = 64
-vector_size = 100
-lstm_size = hidden_size
-input_p, output_p = 0.7, 0.7
-max_hypothesis_length, max_evidence_length = 25, 25
+# batch_size = 32
+# hidden_size = 64
+# vector_size = 100
+# lstm_size = hidden_size
+# input_p, output_p = 0.7, 0.7
+# max_hypothesis_length, max_evidence_length = 25, 25
 
 convert_dict = {
       'entailment': 0,
@@ -74,7 +76,6 @@ lstm_drop =  tf.contrib.rnn.DropoutWrapper(lstm, input_p, output_p)
 
 hyp = tf.placeholder(tf.float32, [N, l_h, D], 'hypothesis')
 evi = tf.placeholder(tf.float32, [N, l_e, D], 'evidence')
-# y = tf.placeholder(tf.float32, [N, 3], 'label')
 
 # lstm_size: the size of the gates in the LSTM, as in the first LSTM layer's initialization.
 # The LSTM used for looking backwards through the sentences, similar to lstm.
@@ -100,14 +101,12 @@ x = tf.split(x, l_seq,)
 
 rnn_outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm, lstm_back, x, dtype=tf.float32)
 
-
-classification_scores = tf.matmul(rnn_outputs[-1], fc_weight) + fc_bias
 # The scores are relative certainties for how likely the output matches
 #   a certain entailment: 
 #     0: Positive entailment
 #     1: Neutral entailment
 #     2: Negative entailment
-
+classification_scores = tf.matmul(rnn_outputs[-1], fc_weight) + fc_bias
  
 # Initialize variables
 init = tf.global_variables_initializer()
@@ -115,8 +114,7 @@ init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 sess = tf.Session()
 sess.run(init)
-saver.restore(sess, "model.ckpt")
-
+saver.restore(sess, os.path.join( model_dir, "model.ckpt"))
 
 preds = []
 training_iterations = range(0, data_feature_list[0].shape[0])
@@ -124,7 +122,6 @@ training_iterations = tqdm(training_iterations)
 for i in training_iterations:
 	prediction = sess.run(classification_scores, feed_dict={hyp: ([data_feature_list[0][i]] * N),
 	                                                        evi: ([data_feature_list[1][i]] * N)})
-	                                                        # y: [[0,0,0]]*N})
 	preds.append(np.argmax(prediction[0]))
 
 accuracy = []
@@ -148,20 +145,5 @@ for times in range(5):
 				accuracy.append(0)
 	avg_acc_null_hypo.append(sum(accuracy)/float(len(accuracy)))		
 print np.mean(avg_acc_null_hypo)*100	
-# evidences_test = ["Maurita and Jade both were at the scene of the car crash.", "No one saw the bear anywhere", "President Obama visited Greece today to sign a trade deal."]
-# hypotheses_test = ["Two people both saw the car crash.", "He saw a big bear in the forest.", "We play cricket every week."]
-
-# sentence1 = [fit_to_size(np.vstack(google_vocab.transform(evidence)[0]),
-#                          (30, 50)) for evidence in evidences_test]
-
-# sentence2 = [fit_to_size(np.vstack(google_vocab.transform(hypothesis)[0]),
-#                          (30,50)) for hypothesis in hypotheses_test]
-
-# print len(sentence1)
-# for i in range(len(sentence1)):
-# 	prediction = sess.run(classification_scores, feed_dict={hyp: ([sentence1[i]] * N),
-# 	                                                        evi: ([sentence2[i]] * N),
-# 	                                                        y: [[0,0,0]]*N})
-# 	print( ["Positive", "Neutral", "Negative"][np.argmax(prediction[0])] + " entailment" )
 
 sess.close()
