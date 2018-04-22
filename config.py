@@ -13,7 +13,7 @@ batch_size = 32
 vector_size = 100
 max_hypothesis_length, max_evidence_length = 25, 25
 
-hidden_size = 64
+hidden_size = 128
 learning_rate = 1
 weight_decay = 0.0001
 lstm_size = hidden_size

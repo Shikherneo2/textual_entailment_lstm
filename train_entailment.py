@@ -9,29 +9,7 @@ from tqdm import tqdm
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-# model_dir = "/home/shikher/workspace/nlp_project/textual_entailment/models" 
-# root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
-# vectors_file = "GoogleNews-vectors-negative300.bin"
-# glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
-
-# snli_dev_file = "snli_1.0/snli_1.0_dev.txt"
-# snli_train_file = "snli_1.0/snli_1.0_train.txt"
-
-#Load the vocabulary
-google_vocab = load_word2vec.WordEmbedding( path = glove_file )
-google_vocab.load( vector_type = "glove" )
-
-# batch_size = 32
-# vector_size = 100
-# max_hypothesis_length, max_evidence_length = 25, 25
-
-# hidden_size = 64
-# learning_rate = 1
-# weight_decay = 0.0001
-# lstm_size = hidden_size
-# check_accuracy_step = 100
-# input_p, output_p = 0.7, 0.7
-# training_iterations_count = 500000
+use_this_dataset = snli_dev_file
 
 def score_setup(row):
     convert_dict = {
@@ -56,7 +34,11 @@ def fit_to_size(matrix, shape):
 def split_data_into_scores():
     import csv
     iteration = 0
-    with open( os.path.join(root_dir, snli_train_file), "r" ) as data:
+    #Load the vocabulary
+    google_vocab = load_word2vec.WordEmbedding( path = glove_file )
+    google_vocab.load( vector_type = "glove" )
+    
+    with open( os.path.join(root_dir, use_this_dataset), "r" ) as data:
         train = csv.DictReader(data, delimiter='\t')
         evi_sentences = []
         hyp_sentences = []
