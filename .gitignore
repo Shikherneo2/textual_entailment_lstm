@@ -1,3 +1,5 @@
+.ipynb_checkpoints/*
+data/*
 models/*
 snli_1.0/*
 *.pyc

@@ -8,24 +8,6 @@ import load_word2vec
 from tqdm import tqdm
 import tensorflow as tf
 
-# model_dir = "/home/shikher/workspace/nlp_project/textual_entailment/models" 
-# root_dir = "/home/shikher/workspace/nlp_project/textual_entailment"
-# vectors_file = "GoogleNews-vectors-negative300.bin"
-# glove_file = "/home/shikher/course_things/cs512-news_clustering/datasets/glove.6B/glove.6B.100d.txt"
-
-# snli_test_file = "snli_1.0/snli_1.0_test.txt"
-
-#Load the vocabulary
-google_vocab = load_word2vec.WordEmbedding( path = glove_file )
-google_vocab.load( vector_type = "glove" )
-
-# batch_size = 32
-# hidden_size = 64
-# vector_size = 100
-# lstm_size = hidden_size
-# input_p, output_p = 0.7, 0.7
-# max_hypothesis_length, max_evidence_length = 25, 25
-
 convert_dict = {
       'entailment': 0,
       'neutral': 1,
@@ -43,6 +25,9 @@ def fit_to_size(matrix, shape):
 def split_data_into_scores(limit=50000):
     import csv
     iteration = 0
+    #Load the vocabulary
+    google_vocab = load_word2vec.WordEmbedding( path = glove_file )
+    google_vocab.load( vector_type = "glove" )
     with open( os.path.join(root_dir, snli_test_file), "r" ) as data:
         train = csv.DictReader(data, delimiter='\t')
         evi_sentences = []
@@ -55,6 +40,7 @@ def split_data_into_scores(limit=50000):
             evi_sentences.append( fit_to_size( np.vstack( google_vocab.transform(row["sentence2"].lower())[0] ), (max_hypothesis_length, vector_size) ) )
             labels.append(row["gold_label"])
 
+        google_vocab.reset()
         hyp_sentences = np.array(hyp_sentences)
         evi_sentences = np.array(evi_sentences)
         return (hyp_sentences, evi_sentences), labels
@@ -67,7 +53,6 @@ l_h, l_e = max_hypothesis_length, max_evidence_length
 N, D, H = batch_size, vector_size, hidden_size
 l_seq = l_h + l_e
 
-google_vocab.reset()
 tf.reset_default_graph()
 lstm = tf.contrib.rnn.BasicLSTMCell(lstm_size)
 
